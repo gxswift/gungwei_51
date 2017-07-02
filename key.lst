@@ -1,0 +1,237 @@
+C51 COMPILER V9.53.0.0   KEY                                                               07/02/2017 10:57:20 PAGE 1   
+
+
+C51 COMPILER V9.53.0.0, COMPILATION OF MODULE KEY
+OBJECT MODULE PLACED IN key.obj
+COMPILER INVOKED BY: C:\Keil_C51\C51\BIN\C51.EXE user\key.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\key.lst)
+                    - TABS(2) OBJECT(key.obj)
+
+line level    source
+
+   1          #include "key.h"
+*** WARNING C318 IN LINE 3 OF user\key.h: can't open file 'stm8s.h'
+*** ERROR C129 IN LINE 33 OF user\key.h: missing ';' before 'ReadKeyValue'
+   2          #include "ctrl.h"
+*** WARNING C318 IN LINE 2 OF user\key.c: can't open file 'ctrl.h'
+   3          #include "filter.h"
+*** WARNING C318 IN LINE 3 OF user\key.c: can't open file 'filter.h'
+   4          
+   5          void Key_Init(void)
+   6          {
+   7            GPIO_Init(GPIOA, GPIO_PIN_1, GPIO_MODE_IN_FL_NO_IT);
+   8            GPIO_Init(GPIOB, GPIO_PIN_4, GPIO_MODE_IN_FL_NO_IT);
+   9            GPIO_Init(GPIOB, GPIO_PIN_5, GPIO_MODE_IN_FL_NO_IT);
+  10            GPIO_Init(GPIOF, GPIO_PIN_4, GPIO_MODE_IN_FL_NO_IT);
+  11            GPIO_Init(GPIOE, GPIO_PIN_5, GPIO_MODE_IN_FL_NO_IT);
+  12            GPIO_Init(GPIOA, GPIO_PIN_2, GPIO_MODE_IN_FL_NO_IT);
+  13          }
+  14          /*
+  15          K1      PA1
+  16          K2      PA2
+  17          K3      PF4
+  18          K4      PE5
+  19          K5      PB5
+  20          K6      PB4
+  21          */
+  22          u16 Get_Key(void)
+  23          {
+  24              uint16_t ReadKey = 0;
+  25          
+  26              if(!GPIO_ReadInputPin(GPIOA, GPIO_PIN_1))
+  27              {
+  28                  ReadKey |= PRESS_KEY1;
+  29              }
+  30              if(!GPIO_ReadInputPin(GPIOA, GPIO_PIN_2))
+  31              {
+  32                  ReadKey |= PRESS_KEY2;
+  33              }
+  34              if(!GPIO_ReadInputPin(GPIOF, GPIO_PIN_4))
+  35              {
+  36                  ReadKey |= PRESS_KEY3;
+  37              }
+  38              if(!GPIO_ReadInputPin(GPIOE, GPIO_PIN_5))
+  39              {
+  40                  ReadKey |= PRESS_KEY4;
+  41              }
+  42              if(!GPIO_ReadInputPin(GPIOB, GPIO_PIN_5))
+  43              {
+  44                  ReadKey |= PRESS_KEY5;
+  45              }
+  46              if(!GPIO_ReadInputPin(GPIOB, GPIO_PIN_4))
+  47              {
+  48                  ReadKey |= PRESS_KEY6;
+  49              }
+  50              return ReadKey;
+C51 COMPILER V9.53.0.0   KEY                                                               07/02/2017 10:57:20 PAGE 2   
+
+  51          }
+  52          
+  53          /*
+  54          #define KEY_POWER               PRESS_KEY1
+  55          #define KEY_RESET               PRESS_KEY2
+  56          #define KEY_KETTLE              PRESS_KEY3
+  57          #define KEY_TEMP                PRESS_KEY4
+  58          #define KEY_QUANTIFY            PRESS_KEY5
+  59          #define KEY_STOP                PRESS_KEY6
+  60          */
+  61          
+  62          u16 ReadKeyValue(void)
+  63          {
+  64            static uint8_t Key_State;
+  65            static uint8_t key_time;
+  66            static uint16_t Key_LongCheck;
+  67            static uint16_t Key_Prev    = 0;     
+  68            
+  69            u16 Key_press;
+  70            u16 Key_return = 0;
+  71            
+  72            Key_press = Get_Key();
+  73            switch (Key_State)
+  74            {
+  75            case 0:
+  76              if(Key_press != 0)
+  77              {
+  78                Key_Prev = Key_press;
+  79                Key_State = 1;
+  80              }
+  81              break;
+  82            case 1:
+  83              if(Key_press == Key_Prev)
+  84              {
+  85                Key_return= Key_Prev | KEY_DOWN;
+  86                if (Key_press == KEY_POWER)
+  87                {
+  88                  Key_State = 2;
+  89                }
+  90                else 
+  91                if (Key_press == KEY_RESET)
+  92                {
+  93                  Key_State = 2;
+  94                }
+  95                else 
+  96                if (Key_press == KEY_KETTLE)
+  97                {
+  98                  Key_State = 2;
+  99                }
+ 100                else 
+ 101                if (Key_press == KEY_TEMP)//温度水杯组合
+ 102                {
+ 103                  Key_State = 3;
+ 104                }
+ 105                else 
+ 106                if (Key_press == KEY_CUP)
+ 107                {
+ 108                  Key_State = 2;
+ 109                }
+ 110                else 
+ 111                if (Key_press == KEY_QUANTIFY)//温度水杯组合
+ 112                {
+C51 COMPILER V9.53.0.0   KEY                                                               07/02/2017 10:57:20 PAGE 3   
+
+ 113                  Key_State = 3;
+ 114                }
+ 115                else 
+ 116                if (Key_press == KEY_TEMP|KEY_CUP)
+ 117                {
+ 118                  Key_State = 2;          
+ 119                }
+ 120                return Key_return ;
+ 121              }
+ 122              else                                    //°′?üì§?e,ê????ˉ,2??ìó|°′?ü
+ 123              {
+ 124                Key_State = 0;
+ 125              }
+ 126              break;
+ 127              
+ 128            case 2://抬起  长按
+ 129          //    if(Key_press != Key_Prev)    
+ 130              if((Key_press &0x3F )== 0)
+ 131              {
+ 132                Key_State = 0;
+ 133                Key_LongCheck = 0;
+ 134                Key_return = Key_Prev | KEY_UP;
+ 135                return Key_return;
+ 136              }
+ 137              if(Key_press == Key_Prev)
+ 138              {
+ 139                Key_LongCheck++;
+ 140                if(Key_LongCheck >= 150)   //长按时间三秒钟              
+ 141                {
+ 142                  Key_LongCheck = 0;
+ 143                  Key_State = 5;
+ 144                  Key_return= Key_press |  KEY_LONG;
+ 145                  return Key_return;
+ 146                }
+ 147              }
+ 148              break;
+ 149              
+ 150            case 3://组合长按
+ 151              if (Key_press == Key_Prev)
+ 152              {
+ 153                Key_LongCheck++;
+ 154                if(Key_LongCheck >= 150)
+ 155                {
+ 156                  Key_LongCheck = 0;
+ 157                  Key_State = 5;
+ 158                  Key_return = Key_press|KEY_LONG;
+ 159                  return Key_return ;
+ 160                }
+ 161              }
+ 162              else if (Key_press & (KEY_TEMP|KEY_QUANTIFY))
+ 163              {
+ 164                Key_LongCheck++;
+ 165                if (Key_LongCheck >=150)
+ 166                {
+ 167                  Key_LongCheck = 0;
+ 168                  Key_State = 5;
+ 169                  Key_return = KEY_TEMP|KEY_QUANTIFY|KEY_LONG;
+ 170                  return Key_return ;
+ 171                }
+ 172              }
+ 173              else if((Key_press &0x3F )== 0)
+ 174              {
+C51 COMPILER V9.53.0.0   KEY                                                               07/02/2017 10:57:20 PAGE 4   
+
+ 175                  Key_State = 0;
+ 176                  Key_LongCheck = 0;
+ 177                  Key_return = Key_Prev|KEY_UP;
+ 178                  return Key_return ;      
+ 179              }
+ 180              break;
+ 181              
+ 182            case 4://连按   暂不用
+ 183              if (Key_press == Key_Prev) 
+ 184              {
+ 185                Key_LongCheck++;
+ 186                if (Key_LongCheck >= 50) 
+ 187                {
+ 188                  if (++key_time >= 10)
+ 189                  {
+ 190                    key_time = 0;                       
+ 191                    Key_return = Key_press | KEY_LIAN;
+ 192                    return Key_return;
+ 193                  }
+ 194                }
+ 195              }
+ 196              else
+ 197              {
+ 198                Key_LongCheck = 0;
+ 199                Key_State = 5; 
+ 200              }
+ 201              break;
+ 202              
+ 203            case 5:
+ 204              if(Key_press != Key_Prev)
+ 205              {
+ 206                Key_LongCheck = 0;
+ 207                Key_State = 0;
+ 208              }
+ 209              break;    
+ 210            }
+ 211            return  NO_KEY;
+ 212          }
+ 213          
+ 214          
+ 215          
+
+C51 COMPILATION COMPLETE.  3 WARNING(S),  1 ERROR(S)
