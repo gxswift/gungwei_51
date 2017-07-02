@@ -1,7 +1,6 @@
 #include "display.h"
 
 /*
-
 Òº¾§
 CS  PD4
 RD  PD3
@@ -20,8 +19,6 @@ void Display_Init()
 }
 
 
-//LCD Lcd;
-//LCD Lcd1;
 void Ht1621_Init()
 {	
   CS_H;
